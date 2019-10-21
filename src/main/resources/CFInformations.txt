@@ -1,0 +1,68 @@
+=====PLACEHOLDERS====================
+#DEFAULT
+<playername>
+<eventname>
+<motd>
+
+<isop: [string: player]>
+<money: [string: player]>
+<health: [string: player]>
+<maxhealth: [string: player]>
+<hungry: [string: player]>
+<xp: [string: player]>
+<gamemode: [string: player]>
+<leveltime: [string: level]>
+<realtime: [string: timeformat]>
+<calculate: [string: expression]>
+<$[string: player]:[string:var]>
+<svar: [string: var]>
+
+#CustomizerCommand
+<cmdlabel>
+<cmdarg>
+<cmdargs: [int: index]>
+
+#CustomizerArea
+<enter>
+<area>
+
+=====FUNCTIONS======================
+#DEFAULT
+@RUNSCRIPT [string: script]
+
+@IF [string: #tag] [statement]
+@ELSE [string: #tag]
+@RESETIF [string: #tag]
+
+@DELAY [int: sec]
+@COOLDOWN [int: sec]
+
+@MESSAGE [string... msg]
+@DMESSAGE [string... msg]
+@BROADCAST [string... msg]
+
+@CMD [string: cmd] [string... args]
+@CMDOP [string: cmd] [string... args]
+@CMDCON [string: cmd] [string... args]
+
+@SOUND [string: player] [string: sound]
+@EFFECT [string: player] [int: effect] [int: second] <int: hardness> <boolean: visible>
+
+@DROPITEM [string: level] [int: x] [int: y] [int: z] [int: itemid] [int: count] <int: data>
+
+@TELEPORT [string: player] [string: level] [int: x] [int: y] [int: z]
+
+@HEAL [string: player] [int: health]
+@SETHEALTH [string: player] [int: health]
+@KILL [string: player] <boolean: immediateRespawn>
+@SETHUNGRY [string: player] [int: hungry]
+
+@JUMP [String: player] [int: x] [int: y] [int: z]
+
+@ADDMONEY [String: player] [int: money]
+@SETMONEY [String: player] [int: money]
+@TAKEMONEY [String: player] [int: money]
+
+@SETPVAR [string:
+
+@SETCANCELLED [bool: cancel]
