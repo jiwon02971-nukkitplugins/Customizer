@@ -5,7 +5,7 @@ import cn.nukkit.command.CommandExecutor;
 import cn.nukkit.event.Event;
 import iKguana.customizer.CustomizerExecutor;
 
-public abstract class CustomizerBase extends UsefulFunctions implements CommandExecutor {
+public abstract class CustomizerBase extends RFC implements CommandExecutor {
 	private String name;
 
 	public void setName(String name) {

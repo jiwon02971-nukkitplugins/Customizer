@@ -13,7 +13,7 @@ import cn.nukkit.level.Sound;
 import cn.nukkit.network.protocol.PlaySoundPacket;
 import iKguana.profiler.Profiler;
 
-public abstract class UsefulFunctions {
+public abstract class RFC {
 	protected static boolean isInteger(String... nums) {
 		try {
 			for (String num : nums)

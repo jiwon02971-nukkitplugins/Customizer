@@ -34,7 +34,7 @@ import iKguana.customizer.CustomizerCommands;
 import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.commands.DialogWindowCustom.E_Type;
 import iKguana.customizer.interfaces.CustomizerBase;
-import iKguana.customizer.interfaces.UsefulFunctions;
+import iKguana.customizer.interfaces.RFC;
 import iKguana.customizer.tools.CT;
 import iKguana.simpledialog.SimpleDialog;
 
@@ -528,7 +528,7 @@ class DialogManager {
 	}
 }
 
-abstract class DialogWindow extends UsefulFunctions {
+abstract class DialogWindow {
 	private final File DIALOG_FILE;
 	Config cfg = null;
 
@@ -576,6 +576,12 @@ abstract class DialogWindow extends UsefulFunctions {
 
 	public void remove() {
 		DIALOG_FILE.delete();
+	}
+
+	protected static String replaceAll(String str, String[] args) {
+		for (int i = 0; i < args.length; i++)
+			str = str.replace("%" + (i + 1), args[i]);
+		return str;
 	}
 
 	public void initConfig() {

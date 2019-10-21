@@ -3,10 +3,10 @@ package iKguana.customizer;
 import java.io.File;
 
 import cn.nukkit.utils.Config;
-import iKguana.customizer.interfaces.UsefulFunctions;
+import iKguana.customizer.interfaces.RFC;
 import iKguana.profiler.Profiler;
 
-public class CustomizerVariable extends UsefulFunctions {
+public class CustomizerVariable extends RFC {
 	static Config globalVars;
 
 	public CustomizerVariable() {

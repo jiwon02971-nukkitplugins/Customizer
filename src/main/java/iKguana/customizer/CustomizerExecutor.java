@@ -11,10 +11,10 @@ import cn.nukkit.Server;
 import cn.nukkit.event.Event;
 import cn.nukkit.scheduler.Task;
 import iKguana.customizer.interfaces.CustomizerBase;
-import iKguana.customizer.interfaces.UsefulFunctions;
+import iKguana.customizer.interfaces.RFC;
 import iKguana.economy.MoneyAPI;
 
-public class CustomizerExecutor extends UsefulFunctions {
+public class CustomizerExecutor extends RFC {
 	public static void executeScript(CustomizerBase cb, Player player, String script, ArrayList<String> scripts, Event event, Object data) {
 		(new ScriptTask(cb, player, script, scripts, event, data)).r();
 	}
