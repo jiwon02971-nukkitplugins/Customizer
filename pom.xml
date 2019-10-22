@@ -7,14 +7,6 @@
 	<artifactId>Customizer</artifactId>
 	<version>1.0.0</version>
 
-    <distributionManagement>
-        <repository>
-            <id>iKguana</id>
-            <name>SimpleDialog</name>
-            <url>file://${project.build.directory}</url>
-        </repository>
-    </distributionManagement>
-
     <build>
 		<plugins>
 			<plugin>
