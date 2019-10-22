@@ -7,7 +7,15 @@
 	<artifactId>Customizer</artifactId>
 	<version>1.0.0</version>
 
-	<build>
+    <distributionManagement>
+        <repository>
+            <id>iKguana</id>
+            <name>SimpleDialog</name>
+            <url>file://${project.build.directory}</url>
+        </repository>
+    </distributionManagement>
+
+    <build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -53,19 +61,16 @@
 			<groupId>iKguana</groupId>
 			<artifactId>SimpleDialog</artifactId>
 			<version>1.0.0</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>iKguana</groupId>
 			<artifactId>Profiler</artifactId>
 			<version>1.0.0</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>iKguana</groupId>
 			<artifactId>Economy</artifactId>
 			<version>1.0.0</version>
-			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 
