@@ -210,7 +210,7 @@ public class CustomizerClick extends CustomizerBase {
 				ArrayList<String> list = getAreas(pos);
 
 				for (String area : list)
-					CustomizerExecutor.executeScript(this, event.getPlayer(), getScript(pos.level.getName(), area), CustomizerScript.getSources(getScript(pos.level.getName(), area)), event, area);
+					CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(getScript(pos.level.getName(), area)), event, area);
 			}
 		}
 	}

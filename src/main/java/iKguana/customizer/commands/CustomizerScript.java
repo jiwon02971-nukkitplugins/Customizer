@@ -1,13 +1,11 @@
 package iKguana.customizer.commands;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
+import iKguana.customizer.interfaces.ScriptBase;
 import org.jline.utils.InputStreamReader;
 
 import cn.nukkit.Player;
@@ -30,200 +28,236 @@ import iKguana.customizer.tools.CT;
 import iKguana.simpledialog.SimpleDialog;
 
 public class CustomizerScript extends CustomizerBase {
-	private static File scriptFolder;
 
-	public CustomizerScript() {
-		setName("CustomizerScript");
 
-		scriptFolder = new File(Customizer.getInstance().getDataFolder() + File.separator + "Scripts");
-		scriptFolder.mkdirs();
+    public CustomizerScript() {
+        setName("CustomizerScript");
 
-		CustomizerCommands.getInstance().registerCommand(this, CT.getMessage(getName(), "label"), CT.getMessage(getName(), "description"), CT.getMessage(getName(), "usage", CT.getMessage(getName(), "label")), CT.getMessage(getName(), "permission"));
+        new ScriptManager(new File(Customizer.getInstance().getDataFolder() + File.separator + "Scripts"));
 
-		CustomizerExecutor.customGlobalFunctions.put("@RUNSCRIPT", this);
-	}
+        CustomizerCommands.getInstance().registerCommand(this, CT.getMessage(getName(), "label"), CT.getMessage(getName(), "description"), CT.getMessage(getName(), "usage", CT.getMessage(getName(), "label")), CT.getMessage(getName(), "permission"));
 
-	@Override
-	public void executeCustomGlobalFunction(CustomizerBase cb, Player player, Event event, String line, String fc, String arg, String[] args) {
-		if (fc.equals("@RUNSCRIPT")) {
-			if (args.length > 0)
-				CustomizerExecutor.executeScript(cb, player, args[0], CustomizerScript.getSources(args[0]), event, null);
-		}
-	}
+        CustomizerExecutor.customGlobalFunctions.put("@RUNSCRIPT", this);
+    }
 
-	@Override
-	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if (cmd.getName().equals(CT.getMessage(getName(), "label"))) {
-			if (sender.isPlayer()) {
-				FormWindowSimple window = new FormWindowSimple("커스텀 스크립트", "사용할 기능을 클릭해주세요.");
-				window.addButton(new ElementButton("스크립트 추가"));
-				window.addButton(new ElementButton("스크립트 보기"));
-				window.addButton(new ElementButton("스크립트 편집"));
-				window.addButton(new ElementButton("스크립트 삭제"));
-				SimpleDialog.sendDialog(this, "form_script_menu", (Player) sender, window);
-			} else
-				sender.sendMessage(CT.getMessage("__Public", "NOT_IN_GAME"));
-			return true;
-		}
-		return false;
-	}
+    @Override
+    public void executeCustomGlobalFunction(CustomizerBase cb, Player player, Event event, String line, String fc, String arg, String[] args) {
+        if (fc.equals("@RUNSCRIPT")) {
+            if (args.length >= 1)
+                if (args.length >= 2)
+                    CustomizerExecutor.executeScript(cb, player, CustomizerScript.getScript(args[0]), event, null, args[1]);
+                else
+                    CustomizerExecutor.executeScript(cb, player, CustomizerScript.getScript(args[0]), event, null);
+        }
+    }
 
-	public void form_script_menu(PlayerFormRespondedEvent event, Object data) {
-		String text = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
-		if (text.equals("스크립트 추가")) {
-			FormWindowCustom window = new FormWindowCustom("스크립트 추가");
-			window.addElement(new ElementInput("스크립트의 이름을 입력해주세요."));
-			window.addElement(new ElementInput("소스를 입력해주세요."));
-			window.addElement(new ElementInput("소스를 입력해주세요.", "선택 입력입니다. 공백일시 무시됨."));
-			SimpleDialog.sendDialog(this, "form_addSource", event.getPlayer(), window);
-		} else if (text.equals("스크립트 보기")) {
-			SimpleDialog.sendDialog(this, "form_showScript", event.getPlayer(), SimpleDialog.Type.FILTERING, getAllScripts());
-		} else if (text.equals("스크립트 편집")) {
-			SimpleDialog.sendDialog(this, "form_editScript", event.getPlayer(), SimpleDialog.Type.FILTERING, getAllScripts());
-		} else if (text.equals("스크립트 삭제")) {
-			SimpleDialog.sendDialog(this, "form_removeScript", event.getPlayer(), SimpleDialog.Type.FILTERING, getAllScripts());
-		}
-	}
+    @Override
+    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+        if (cmd.getName().equals(CT.getMessage(getName(), "label"))) {
+            if (sender.isPlayer()) {
+                FormWindowSimple window = new FormWindowSimple("커스텀 스크립트", "사용할 기능을 클릭해주세요.");
+                window.addButton(new ElementButton("스크립트 추가"));
+                window.addButton(new ElementButton("스크립트 보기"));
+                window.addButton(new ElementButton("스크립트 편집"));
+                window.addButton(new ElementButton("스크립트 삭제"));
+                window.addButton(new ElementButton("스크립트 리로드"));
+                SimpleDialog.sendDialog(this, "form_script_menu", (Player) sender, window);
+            } else
+                sender.sendMessage(CT.getMessage("__Public", "NOT_IN_GAME"));
+            return true;
+        }
+        return false;
+    }
 
-	public void form_addSource(PlayerFormRespondedEvent event, Object data) {
-		FormResponseCustom response = (FormResponseCustom) event.getResponse();
-		String name = response.getInputResponse(0);
-		String source_0 = response.getInputResponse(1);
-		String source_1 = response.getInputResponse(2);
-		if (name.trim().length() != 0) {
-			addSource(name, source_0);
-			if (source_1.trim().length() != 0)
-				addSource(name, source_1);
-			
-			SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "소스가 정상적으로 추가되었습니다.");
-		} else
-			SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "스크립트의 이름은 공백이 될수없습니다.");
-	}
+    public void form_script_menu(PlayerFormRespondedEvent event, Object data) {
+        String text = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
+        if (text.equals("스크립트 추가")) {
+            FormWindowCustom window = new FormWindowCustom("스크립트 추가");
+            window.addElement(new ElementInput("스크립트의 이름을 입력해주세요."));
+            window.addElement(new ElementInput("소스를 입력해주세요."));
+            window.addElement(new ElementInput("소스를 입력해주세요.", "선택 입력입니다. 공백일시 무시됨."));
 
-	public void form_showScript(PlayerFormRespondedEvent event, Object data) {
-		String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
-		SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, getSourcesString(name));
-	}
+            SimpleDialog.sendDialog(this, "form_addSource", event.getPlayer(), window);
+        } else if (text.equals("스크립트 보기")) {
+            SimpleDialog.sendDialog(this, "form_showScript", event.getPlayer(), SimpleDialog.Type.FILTERING, ScriptManager.getIt().getAllScript());
+        } else if (text.equals("스크립트 편집")) {
+            SimpleDialog.sendDialog(this, "form_editScript", event.getPlayer(), SimpleDialog.Type.FILTERING, ScriptManager.getIt().getAllScript());
+        } else if (text.equals("스크립트 삭제")) {
+            SimpleDialog.sendDialog(this, "form_removeScript", event.getPlayer(), SimpleDialog.Type.FILTERING, ScriptManager.getIt().getAllScript());
+        }
+    }
 
-	public void form_editScript(PlayerFormRespondedEvent event, Object data) {
-		String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
-		FormWindowCustom window = new FormWindowCustom("스크립트 수정");
-		for (String source : getSources(name))
-			window.addElement(new ElementInput("", "", source));
-		SimpleDialog.sendDialog(this, "form_applySource", event.getPlayer(), window, name);
-	}
+    public void form_addSource(PlayerFormRespondedEvent event, Object data) {
+        FormResponseCustom response = (FormResponseCustom) event.getResponse();
+        String name = response.getInputResponse(0);
+        CScript script = ScriptManager.getIt().getCScript(name);
+        String source_0 = response.getInputResponse(1);
+        String source_1 = response.getInputResponse(2);
 
-	public void form_applySource(PlayerFormRespondedEvent event, Object data) {
-		FormResponseCustom response = (FormResponseCustom) event.getResponse();
-		for (int i = 0; i < response.getResponses().keySet().size(); i++)
-			editLine((String) data, i, response.getInputResponse(i));
-		SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "수정되었습니다.");
-	}
+        if (name.trim().length() != 0) {
+            script.addLine(source_0);
+            if (source_1.trim().length() != 0)
+                script.addLine(source_1);
+            script.save();
 
-	public void form_removeScript(PlayerFormRespondedEvent event, Object data) {
-		String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
+            SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "소스가 정상적으로 추가되었습니다.");
+        } else
+            SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "스크립트의 이름은 공백이 될수없습니다.");
+    }
 
-		removeScript(name);
+    public void form_showScript(PlayerFormRespondedEvent event, Object data) {
+        String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
 
-		SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "스크립트가 제거되었습니다.");
-	}
+        CScript script = ScriptManager.getIt().getCScript(name);
 
-//////////////////////////////////////////////////////////////////////////////////
-	public static File getScriptFile(String name) {
-		return new File(scriptFolder + File.separator + name + ".is");
-	}
+        SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, script.getLinesString());
+    }
 
-	public static void addSource(String name, String source) {
-		File script = getScriptFile(name);
-		try {
-			PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(script, true)), true);
-			writer.println(source);
-			writer.close();
-		} catch (Exception err) {
-			Server.getInstance().getLogger().debug("Customizer] 오류가 발생했습니다. (" + err.getClass().getName() + ")");
-		}
-	}
+    public void form_editScript(PlayerFormRespondedEvent event, Object data) {
+        String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
 
-	public static void editLine(String name, int idx, String line) {
-		ArrayList<String> lines = getSources(name);
-		if (0 <= idx && idx < lines.size())
-			lines.set(idx, line);
-		else
-			return;
+        CScript script = ScriptManager.getIt().getCScript(name);
 
-		removeScript(name);
+        FormWindowCustom window = new FormWindowCustom("스크립트 수정");
+        for (String source : script.getLines())
+            window.addElement(new ElementInput("", "", source));
 
-		File script = getScriptFile(name);
-		try {
-			PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(script, true)), true);
-			for (String l : lines)
-				writer.println(l);
-			writer.close();
-		} catch (Exception err) {
-			Server.getInstance().getLogger().debug("Customizer] 오류가 발생했습니다. (" + err.getClass().getName() + ")");
-		}
-	}
+        SimpleDialog.sendDialog(this, "form_applySource", event.getPlayer(), window, name);
+    }
 
-	public static String getSourcesString(String name) {
-		String str = "";
-		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(getScriptFile(name)), "UTF-8"));
+    public void form_applySource(PlayerFormRespondedEvent event, Object data) {
+        FormResponseCustom response = (FormResponseCustom) event.getResponse();
 
-			String line = "";
-			while ((line = reader.readLine()) != null)
-				str += line + "\n";
+        CScript script = ScriptManager.getIt().getCScript((String) data);
 
-			reader.close();
-		} catch (Exception err) {
-			Server.getInstance().getLogger().debug("Customizer] 오류가 발생했습니다. (" + err.getClass().getName() + ")");
-		}
-		return str;
-	}
+        for (int i = 0; i < response.getResponses().keySet().size(); i++)
+            script.replaceLine(i, response.getInputResponse(i));
+        script.save();
 
-	public static ArrayList<String> getSources(String name) {
-		ArrayList<String> list = new ArrayList<>();
-		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(getScriptFile(name)), "UTF-8"));
+        SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "수정되었습니다.");
+    }
 
-			String line = "";
-			while ((line = reader.readLine()) != null)
-				list.add(line);
+    public void form_removeScript(PlayerFormRespondedEvent event, Object data) {
+        String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
 
-			reader.close();
-		} catch (Exception err) {
-			Server.getInstance().getLogger().debug("Customizer] 오류가 발생했습니다. (" + err.getClass().getName() + ")");
-		}
-		return list;
-	}
+        ScriptManager.getIt().removeCScript(name);
 
-	public static void removeSource(String name, int idx) {
-		ArrayList<String> lines = getSources(name);
-		lines.remove(idx);
+        SimpleDialog.sendDialog(this, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "스크립트가 제거되었습니다.");
+    }
 
-		removeScript(name);
-
-		File script = getScriptFile(name);
-		try {
-			PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(script, true)), true);
-			for (String line : lines)
-				writer.println(line);
-			writer.close();
-		} catch (Exception err) {
-			Server.getInstance().getLogger().debug("Customizer] 오류가 발생했습니다.");
-		}
-	}
-
-	public static void removeScript(String name) {
-		File script = getScriptFile(name);
-		if (script.isFile())
-			script.delete();
-	}
-
-	public static ArrayList<String> getAllScripts() {
-		ArrayList<String> list = new ArrayList<>();
-		for (File is : scriptFolder.listFiles())
-			if (is.getName().endsWith(".is"))
-				list.add(is.getName().replace(".is", ""));
-		return list;
-	}
+    public static CScript getScript(String name) {
+        return ScriptManager.getIt().getCScript(name);
+    }
 }
+
+class ScriptManager {
+    private static ScriptManager $instance;
+    File SCRIPTS_DIR;
+    String format = ".is";
+
+    public ScriptManager(File SCRIPTS_DIR) {
+        $instance = this;
+        this.SCRIPTS_DIR = SCRIPTS_DIR;
+        this.SCRIPTS_DIR.mkdirs();
+    }
+
+    HashMap<String, CScript> scripts = new HashMap<>();
+
+    public CScript getCScript(String script) {
+        if (!scripts.containsKey(script))
+            scripts.put(script, new CScript(script, new File(SCRIPTS_DIR, script + format)));
+
+        return scripts.get(script);
+    }
+
+    public void removeCScript(String script) {
+        getCScript(script).delete();
+        scripts.remove(script);
+    }
+
+    public ArrayList<String> getAllScript() {
+        ArrayList<String> labels = new ArrayList<>();
+        for (File script : SCRIPTS_DIR.listFiles())
+            if (script.getName().endsWith(format))
+                labels.add(script.getName().substring(0, (script.getName().length() - format.length())));
+
+        return labels;
+    }
+
+    public void reload() {
+        scripts = new HashMap<>();
+    }
+
+    public static ScriptManager getIt() {
+        return $instance;
+    }
+}
+
+class CScript extends ScriptBase {
+    String name;
+    File file;
+    ArrayList<String> sources = new ArrayList<>();
+
+    public CScript(String name, File file) {
+        super(name);
+        this.file = file;
+
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+
+            String line;
+            while ((line = reader.readLine()) != null)
+                addLine(line);
+
+            reader.close();
+        } catch (Exception err) {
+        }
+    }
+
+    @Override
+    public void addLine(String line) {
+        sources.add(line);
+    }
+
+    @Override
+    public void replaceLine(int idx, String line) {
+        sources.set(idx, line);
+    }
+
+    @Override
+    public void deleteLine(int idx) {
+        sources.remove(idx);
+    }
+
+    @Override
+    public List<String> getLines() {
+        return sources;
+    }
+
+    @Override
+    public String getLinesString() {
+        String str = "";
+        for (String source : sources)
+            str += source + "\n";
+
+        return str.trim();
+    }
+
+    @Override
+    public void delete() {
+        file.delete();
+    }
+
+    @Override
+    public void save() {
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+            bw.write(getLinesString());
+            bw.flush();
+            bw.close();
+        } catch (Exception err) {
+            Server.getInstance().getLogger().error("스크립트 저장에 실패하였습니다. (" + name + ") [" + err.getClass().getSimpleName() + "]");
+        }
+    }
+}
+

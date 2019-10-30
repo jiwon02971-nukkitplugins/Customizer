@@ -21,14 +21,6 @@ public class Customizer extends PluginBase {
 		getServer().getPluginManager().registerEvents(new CustomizerEvents(), this);
 	}
 
-	public static ArrayList<Config> configs = new ArrayList<>();
-
-	@Override
-	public void onDisable() {
-		for (Config c : configs)
-			c.save();
-	}
-
 	public static Customizer getInstance() {
 		return $instance;
 	}
