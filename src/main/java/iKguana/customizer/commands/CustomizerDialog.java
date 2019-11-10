@@ -133,7 +133,7 @@ public class CustomizerDialog extends CustomizerBase {
             DialogWindowSimple dialog = (DialogWindowSimple) data;
             FormResponseSimple response = (FormResponseSimple) event.getResponse();
 
-            CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(dialog.getScript(response.getClickedButtonId())), event, new Object[]{event, data});
+            CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(dialog.getScript()), event, new Object[]{event, data});
         } else if (event.getWindow() instanceof FormWindowCustom) {
             DialogWindowCustom dialog = (DialogWindowCustom) data;
             FormResponseCustom response = (FormResponseCustom) event.getResponse();
@@ -201,7 +201,6 @@ public class CustomizerDialog extends CustomizerBase {
                 FormWindowCustom window = new FormWindowCustom("ADDBUTTON");
                 window.addElement(new ElementLabel(name));
                 window.addElement(new ElementInput("버튼 텍스트"));
-                window.addElement(new ElementInput("버튼 스크립트"));
                 window.addElement(new ElementSlider("색인", 0, dialog.getRawButtons().size(), 1, dialog.getRawButtons().size()));
 
                 SimpleDialog.sendDialog(this, "form_dialog_addbutton_simple", event.getPlayer(), window, dialog);
@@ -236,6 +235,7 @@ public class CustomizerDialog extends CustomizerBase {
             FormWindowCustom window = new FormWindowCustom("WindowSimple");
             window.addElement(new ElementInput("타이틀"));
             window.addElement(new ElementInput("설명"));
+            window.addElement(new ElementInput("스크립트"));
             SimpleDialog.sendDialog(this, "form_dialog_setdefault_simple", event.getPlayer(), window, name);
         } else if (D_Type.get(type) == D_Type.FormWindowCustom) {
             FormWindowCustom window = new FormWindowCustom("WindowCustom");
@@ -267,15 +267,16 @@ public class CustomizerDialog extends CustomizerBase {
     public void form_dialog_setdefault_simple(PlayerFormRespondedEvent event, Object data) {
         String title = ((FormResponseCustom) event.getResponse()).getInputResponse(0);
         String context = ((FormResponseCustom) event.getResponse()).getInputResponse(1);
+        String script = ((FormResponseCustom) event.getResponse()).getInputResponse(2);
 
         DialogWindowSimple dialog = (DialogWindowSimple) DialogManager.getIt().getDialog((String) data, D_Type.FormWindowSimple);
         dialog.setTitle(title);
         dialog.setContext(context);
+        dialog.setScript(script);
 
         FormWindowCustom window = new FormWindowCustom("SIMPLE_ADDBUTTON");
         window.addElement(new ElementLabel("DIALOG : " + (String) data));
         window.addElement(new ElementInput("버튼 텍스트"));
-        window.addElement(new ElementInput("버튼 스크립트"));
         window.addElement(new ElementSlider("색인", 0, dialog.getRawButtons().size(), 1, dialog.getRawButtons().size()));
 
         SimpleDialog.sendDialog(this, "form_dialog_addbutton_simple", event.getPlayer(), window, dialog);
@@ -284,10 +285,9 @@ public class CustomizerDialog extends CustomizerBase {
     public void form_dialog_addbutton_simple(PlayerFormRespondedEvent event, Object data) {
         DialogWindowSimple dialog = (DialogWindowSimple) data;
         String btn_text = ((FormResponseCustom) event.getResponse()).getInputResponse(1);
-        String script = ((FormResponseCustom) event.getResponse()).getInputResponse(2);
-        int idx = (int) ((FormResponseCustom) event.getResponse()).getSliderResponse(3);
+        int idx = (int) ((FormResponseCustom) event.getResponse()).getSliderResponse(2);
 
-        dialog.addButton(btn_text, script, idx);
+        dialog.addButton(btn_text, idx);
         dialog.save();
 
         SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "다이어로그가 저장되었습니다.");
@@ -389,7 +389,7 @@ public class CustomizerDialog extends CustomizerBase {
             if (isInteger(response.getInputResponse(2)))
                 dialog.addElement(new ElementDropdown(response.getInputResponse(0), new ArrayList<String>(Arrays.asList(toArray(response.getInputResponse(1)))), Integer.parseInt(response.getInputResponse(2))));
             else {
-                SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "올바르지않은 데이터가 존재합니다.");
+                SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "올바르지 않은 데이터가 존재합니다.");
                 return;
             }
         }
@@ -407,18 +407,90 @@ public class CustomizerDialog extends CustomizerBase {
     public void form_edit_dialog(PlayerFormRespondedEvent event, Object data) {
         String dialogname = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
         if (DialogManager.getIt().getDialog(dialogname).getType() == D_Type.FormWindowModal) {
-            FormWindowCustom window = new FormWindowCustom("WindowModal");
-            window.addElement(new ElementInput("타이틀"));
-            window.addElement(new ElementInput("설명"));
-            window.addElement(new ElementInput("스크립트"));
-            window.addElement(new ElementInput("1번버튼 텍스트"));
-            window.addElement(new ElementInput("2번버튼 텍스트"));
+            DialogWindowModal dialog = (DialogWindowModal) DialogManager.getIt().getDialog(dialogname);
+
+            FormWindowCustom window = new FormWindowCustom("EDIT_WindowModal");
+            window.addElement(new ElementInput("타이틀", "", dialog.getTitle()));
+            window.addElement(new ElementInput("설명", "", dialog.getContext()));
+            window.addElement(new ElementInput("스크립트", "", dialog.getScript()));
+            window.addElement(new ElementInput("1번버튼 텍스트", "", dialog.getAText()));
+            window.addElement(new ElementInput("2번버튼 텍스트", "", dialog.getBText()));
             SimpleDialog.sendDialog(this, "form_dialog_set_modal", event.getPlayer(), window, dialogname);
         } else if (DialogManager.getIt().getDialog(dialogname).getType() == D_Type.FormWindowSimple) {
+            DialogWindowSimple dialog = (DialogWindowSimple) DialogManager.getIt().getDialog(dialogname);
 
+            FormWindowSimple window = new FormWindowSimple("EDIT_WindowSimple", "편집하거나 삭제할 요소를 클릭해주세요.\n타이틀/설명/스크립트 : 편집\n나머지 요소 : 삭제");
+            window.addButton(new ElementButton("타이틀/설명/스크립트"));
+            for (ElementButton btn : dialog.getButtons())
+                window.addButton(btn);
+
+            SimpleDialog.sendDialog(this, "form_dialog_edit_simple", event.getPlayer(), window, dialog);
         } else if (DialogManager.getIt().getDialog(dialogname).getType() == D_Type.FormWindowCustom) {
+            DialogWindowCustom dialog = (DialogWindowCustom) DialogManager.getIt().getDialog(dialogname);
+
+            FormWindowSimple window = new FormWindowSimple("EDIT_WindowCustom", "편집하거나 삭제할 요소를 클릭해주세요.\n타이틀/설명/스크립트 : 편집\n나머지 요소 : 삭제");
+            window.addButton(new ElementButton("타이틀/스크립트"));
+            for (Map<Object, Object> raw : dialog.getRawElements())
+                window.addButton(new ElementButton((String) raw.get("ElementType")));
+
+            SimpleDialog.sendDialog(this, "form_dialog_edit_custom", event.getPlayer(), window, dialog);
         }
     }
+
+    public void form_dialog_edit_simple(PlayerFormRespondedEvent event, Object data) {
+        FormResponseSimple response = (FormResponseSimple) event.getResponse();
+        DialogWindowSimple dialog = (DialogWindowSimple) data;
+
+        if (response.getClickedButtonId() == 0) {
+            FormWindowCustom window = new FormWindowCustom("EDIT_CUSTOM_ELEMENTS");
+            window.addElement(new ElementInput("타이틀", dialog.getTitle(), dialog.getTitle()));
+            window.addElement(new ElementInput("설명", dialog.getContext(), dialog.getContext()));
+            window.addElement(new ElementInput("스크립트", dialog.getScript(), dialog.getScript()));
+
+            SimpleDialog.sendDialog(this, "form_edit_elements", event.getPlayer(), window, data);
+        } else {
+            dialog.removeButton(response.getClickedButtonId() - 1);
+            dialog.save();
+            SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "다이어로그가 저장되었습니다.");
+        }
+    }
+
+    public void form_dialog_edit_custom(PlayerFormRespondedEvent event, Object data) {
+        FormResponseSimple response = (FormResponseSimple) event.getResponse();
+        DialogWindowCustom dialog = (DialogWindowCustom) data;
+
+        if (response.getClickedButtonId() == 0) {
+            FormWindowCustom window = new FormWindowCustom("EDIT_CUSTOM_ELEMENTS");
+            window.addElement(new ElementInput("타이틀", dialog.getTitle(), dialog.getTitle()));
+            window.addElement(new ElementInput("스크립트", dialog.getScript(), dialog.getScript()));
+
+            SimpleDialog.sendDialog(this, "form_edit_elements", event.getPlayer(), window, data);
+        } else {
+            dialog.removeElement(response.getClickedButtonId() - 1);
+            dialog.save();
+            SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "다이어로그가 저장되었습니다.");
+        }
+    }
+
+    public void form_edit_elements(PlayerFormRespondedEvent event, Object data) {
+        FormResponseCustom response = (FormResponseCustom) event.getResponse();
+        if (data instanceof DialogWindowSimple) {
+            DialogWindowSimple dialog = (DialogWindowSimple) data;
+            dialog.setTitle(response.getInputResponse(0));
+            dialog.setContext(response.getInputResponse(1));
+            dialog.setScript(response.getInputResponse(2));
+            dialog.save();
+            SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "다이어로그가 저장되었습니다.");
+        } else if (data instanceof DialogWindowCustom) {
+            DialogWindowCustom dialog = (DialogWindowCustom) data;
+            dialog.setTitle(response.getInputResponse(0));
+            dialog.setScript(response.getInputResponse(1));
+            dialog.save();
+            SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "다이어로그가 저장되었습니다.");
+        } else
+            sendError(event.getPlayer(), "UNKNOWN_DIALOG_TYPE");
+    }
+
 
     public void form_delete_dialog(PlayerFormRespondedEvent event, Object data) {
         String dialogname = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
@@ -511,7 +583,7 @@ class DialogManager {
 
     public void removeDialog(String name) {
         if (dialogs.containsKey(name)) {
-            dialogs.get(name).remove();
+            dialogs.get(name).delete();
             dialogs.remove(name);
         }
     }
@@ -567,7 +639,7 @@ abstract class DialogWindow {
         return title;
     }
 
-    public void remove() {
+    public void delete() {
         DIALOG_FILE.delete();
     }
 
@@ -669,6 +741,7 @@ class DialogWindowModal extends DialogWindow {
 
 class DialogWindowSimple extends DialogWindow {
     private String context = "";
+    private String script = "";
 
     public DialogWindowSimple(String name) {
         super(name, D_Type.FormWindowSimple);
@@ -676,12 +749,12 @@ class DialogWindowSimple extends DialogWindow {
         if (cfg != null) {
             setTitle(cfg.getString("Title"));
             setContext(cfg.getString("Context"));
+            setScript(cfg.getString("Script"));
             @SuppressWarnings("unchecked")
             ArrayList<Object> list = (ArrayList<Object>) cfg.getList("Buttons");
             for (Object obj : list) {
                 @SuppressWarnings("unchecked")
                 Map<Object, Object> map = (Map<Object, Object>) obj;
-                addButton((String) map.get("text"), (String) map.get("script"));
             }
         }
     }
@@ -694,23 +767,27 @@ class DialogWindowSimple extends DialogWindow {
         return context;
     }
 
-    public void addButton(String text, String script) {
-        addButton(text, script, btns.size());
+    public void setScript(String script) {
+        this.script = script;
     }
 
-    public void addButton(String text, String script, int idx) {
+    public String getScript() {
+        return script;
+    }
+
+    public void addButton(String text) {
+        addButton(text, btns.size());
+    }
+
+    public void addButton(String text, int idx) {
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
         map.put("text", text);
-        map.put("script", script);
+
         btns.add(idx, map);
     }
 
     public ElementButton getButton(int idx) {
         return new ElementButton(btns.get(idx).get("text"));
-    }
-
-    public String getScript(int idx) {
-        return btns.get(idx).get("script");
     }
 
     public void removeButton(int idx) {
@@ -737,6 +814,7 @@ class DialogWindowSimple extends DialogWindow {
 
         cfg.set("Title", getTitle());
         cfg.set("Context", getContext());
+        cfg.set("Script", getScript());
         cfg.set("Buttons", getRawButtons());
 
         cfg.save();
@@ -758,6 +836,7 @@ class DialogWindowSimple extends DialogWindow {
         FormWindowSimple window = new FormWindowSimple(convert(getTitle(), player, s), convert(getContext(), player, s));
         for (ElementButton btn : getButtons())
             window.addButton(convert(btn, player, s));
+
         return window;
     }
 }
@@ -907,6 +986,10 @@ class DialogWindowCustom extends DialogWindow {
 
     public ArrayList<Map<Object, Object>> getRawElements() {
         return rawMap;
+    }
+
+    public void removeElement(int idx) {
+        rawMap.remove(idx);
     }
 
     @Override

@@ -23,6 +23,7 @@ import cn.nukkit.event.player.PlayerMoveEvent;
 import cn.nukkit.event.player.PlayerQuitEvent;
 import cn.nukkit.event.player.PlayerTeleportEvent;
 import cn.nukkit.event.plugin.PluginEnableEvent;
+import cn.nukkit.event.server.DataPacketReceiveEvent;
 import iKguana.customizer.interfaces.CustomizerBase;
 
 public class CustomizerEvents implements Listener {
@@ -31,6 +32,14 @@ public class CustomizerEvents implements Listener {
     @EventHandler
     public void playerJoinEvent(LevelLoadEvent event) {
         for (CustomizerBase c : levelLoadEvent)
+            c.event(event);
+    }
+
+    public static ArrayList<CustomizerBase> dataPacketReceiveEvent = new ArrayList<>();
+
+    @EventHandler
+    public void dataPacketReceiveEvent(DataPacketReceiveEvent event) {
+        for (CustomizerBase c : dataPacketReceiveEvent)
             c.event(event);
     }
 

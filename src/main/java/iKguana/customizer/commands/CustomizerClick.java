@@ -11,14 +11,18 @@ import cn.nukkit.command.CommandSender;
 import cn.nukkit.event.Event;
 import cn.nukkit.event.player.PlayerFormRespondedEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
+import cn.nukkit.event.player.PlayerMoveEvent;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.element.ElementInput;
 import cn.nukkit.form.element.ElementLabel;
+import cn.nukkit.form.element.ElementToggle;
 import cn.nukkit.form.response.FormResponseCustom;
 import cn.nukkit.form.response.FormResponseSimple;
 import cn.nukkit.form.window.FormWindowCustom;
 import cn.nukkit.form.window.FormWindowSimple;
+import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
+import cn.nukkit.math.Vector3;
 import cn.nukkit.utils.Config;
 import cn.nukkit.utils.ConfigSection;
 import iKguana.customizer.Customizer;
@@ -30,25 +34,24 @@ import iKguana.customizer.tools.CT;
 import iKguana.simpledialog.SimpleDialog;
 
 public class CustomizerClick extends CustomizerBase {
-	Config areas;
-
 	public CustomizerClick() {
 		setName("CustomizerClick");
 
-		areas = new Config(Customizer.getInstance().getDataFolder() + File.separator + getName() + ".yml");
+		new ClickManager(new File(Customizer.getInstance().getDataFolder() + File.separator + getName() + ".yml"));
 
 		CustomizerCommands.getInstance().registerCommand(this, CT.getMessage(getName(), "label"), CT.getMessage(getName(), "description"), CT.getMessage(getName(), "usage", CT.getMessage(getName(), "label")), CT.getMessage(getName(), "permission"));
 
 		CustomizerEvents.playerInteractEvent.add(this);
+		CustomizerEvents.playerMoveEvent.add(this);
 
-		CustomizerExecutor.customGlobalPlaceHolders_.put("careas", this);
+		CustomizerExecutor.customGlobalPlaceHolders_.put("clicks", this);
 	}
 
 	@Override
 	public String getCustomPlaceHolder(String tag, Object data) {
 		switch (tag) {
-		case "area":
-			return (String) data;
+			case "area":
+				return ((Click)data).getName();
 		}
 		return super.getCustomPlaceHolder(tag, data);
 	}
@@ -56,10 +59,8 @@ public class CustomizerClick extends CustomizerBase {
 	@Override
 	public String getCustomGlobalPlaceHolder(String tag, String arg, Object data) {
 		switch (tag) {
-		case "careas":
-			if (isPlayerOnline(arg))
-				return ALtoString(getAreas(getPlayerOnline(arg).getPosition()));
-			break;
+			case "clicks":
+				break;
 		}
 		return super.getCustomGlobalPlaceHolder(tag, arg, data);
 	}
@@ -68,7 +69,7 @@ public class CustomizerClick extends CustomizerBase {
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if (cmd.getName().equals(CT.getMessage(getName(), "label"))) {
 			if (sender.isPlayer()) {
-				FormWindowSimple window = new FormWindowSimple(getName(), "사용할 기능을 클릭해주세요.");
+				FormWindowSimple window = new FormWindowSimple("커스텀 영역", "사용할 기능을 클릭해주세요.");
 				window.addButton(new ElementButton("영역 추가"));
 				window.addButton(new ElementButton("영역 편집"));
 				window.addButton(new ElementButton("영역 삭제"));
@@ -86,11 +87,13 @@ public class CustomizerClick extends CustomizerBase {
 			FormWindowCustom window = new FormWindowCustom("영역 추가");
 			window.addElement(new ElementInput("영역의 이름을 입력해주세요."));
 			window.addElement(new ElementInput("사용할 스크립트를 입력해주세요."));
+			window.addElement(new ElementToggle("y값 체크", false));
+
 			SimpleDialog.sendDialog(this, "form_add_area", event.getPlayer(), window);
 		} else if (text.equals("영역 편집")) {
-			SimpleDialog.sendDialog(this, "form_edit_select_world", event.getPlayer(), SimpleDialog.Type.FILTERING, new ArrayList<String>(areas.getKeys(false)));
+			SimpleDialog.sendDialog(this, "form_edit_select_world", event.getPlayer(), SimpleDialog.Type.FILTERING, new ArrayList<String>(ClickManager.getIt().getLevels()));
 		} else if (text.equals("영역 삭제")) {
-			SimpleDialog.sendDialog(this, "form_delete_selete_world", event.getPlayer(), SimpleDialog.Type.FILTERING, new ArrayList<String>(areas.getKeys(false)));
+			SimpleDialog.sendDialog(this, "form_delete_select_world", event.getPlayer(), SimpleDialog.Type.FILTERING, new ArrayList<String>(ClickManager.getIt().getLevels()));
 		}
 	}
 
@@ -103,50 +106,63 @@ public class CustomizerClick extends CustomizerBase {
 			SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "공백은 사용할수 없습니다.");
 			return;
 		}
+		boolean checkHeight = response.getToggleResponse(2);
 
-		HashMap<String, Object> map = new HashMap<>();
-		map.put("name", name);
-		map.put("script", script);
-		queue.put(event.getPlayer(), map);
+		Click area = new Click();
+		area.setName(name);
+		area.setScript(script);
+		queue.put(event.getPlayer(),area);
+
 		SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "첫번째와 두번째 지점을 지정해주세요.");
 	}
 
-	HashMap<String, String> selectedWorld = new HashMap<>();
+	HashMap<String, String> selectedLevel = new HashMap<>();
 
 	public void form_edit_select_world(PlayerFormRespondedEvent event, Object data) {
-		String world = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
-		selectedWorld.put(event.getPlayer().getName(), world);
-		SimpleDialog.sendDialog(this, "form_edit_select_area", event.getPlayer(), SimpleDialog.Type.FILTERING, new ArrayList<String>(areas.getSection(world).getKeys(false)));
+		String level = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
+		selectedLevel.put(event.getPlayer().getName(), level);
+
+		SimpleDialog.sendDialog(this, "form_edit_select_area", event.getPlayer(), SimpleDialog.Type.FILTERING, ClickManager.getIt().getAll(level));
 	}
 
 	public void form_edit_select_area(PlayerFormRespondedEvent event, Object data) {
-		String area = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
+		String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
+		Click area = ClickManager.getIt().getClick(selectedLevel.get(event.getPlayer().getName()), name);
+
 		FormWindowCustom window = new FormWindowCustom("구역 수정");
 		window.addElement(new ElementLabel("구역을 편집합니다."));
-		window.addElement(new ElementInput("스크립트", "입력해주세요.", getScript(selectedWorld.get(event.getPlayer().getName()), area)));
-		window.addElement(new ElementLabel("월드 : " + areas.getString(selectedWorld.get(event.getPlayer().getName()) + "." + area + ".world")));
-		window.addElement(new ElementLabel("1좌표 : " + areas.getString(selectedWorld.get(event.getPlayer().getName()) + "." + area + ".fstPos")));
-		window.addElement(new ElementLabel("2좌표 : " + areas.getString(selectedWorld.get(event.getPlayer().getName()) + "." + area + ".sndPos")));
-		SimpleDialog.sendDialog(this, "form_edit_area", event.getPlayer(), window, selectedWorld.get(event.getPlayer().getName()) + "." + area);
+		window.addElement(new ElementInput("스크립트", "입력해주세요.", area.getScript()));
+		window.addElement(new ElementLabel("월드 : " + area.getLevel()));
+		window.addElement(new ElementLabel("1좌표 : " + area.getFstPos().getFloorX()+", "+area.getFstPos().getFloorY()+", "+area.getFstPos().getFloorZ()));
+		window.addElement(new ElementLabel("2좌표 : " + area.getSndPos().getFloorX()+", "+area.getSndPos().getFloorY()+", "+area.getSndPos().getFloorZ()));
+
+		SimpleDialog.sendDialog(this, "form_edit_area", event.getPlayer(), window, area);
 	}
 
 	public void form_edit_area(PlayerFormRespondedEvent event, Object data) {
 		String script = ((FormResponseCustom) event.getResponse()).getInputResponse(1);
-		areas.set(((String) data) + ".script", script);
-		areas.save();
+		Boolean checkHeight = ((FormResponseCustom) event.getResponse()).getToggleResponse(5);
+
+		Click area = (Click) data;
+		area.setScript(script);
+		ClickManager.getIt().editClick(area);
+
 		SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "수정되었습니다.");
 	}
 
-	public void form_delete_selete_world(PlayerFormRespondedEvent event, Object data) {
-		String world = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
-		selectedWorld.put(event.getPlayer().getName(), world);
-		SimpleDialog.sendDialog(this, "form_delete_select_area", event.getPlayer(), SimpleDialog.Type.FILTERING, new ArrayList<String>(areas.getSection(world).getKeys(false)));
+	public void form_delete_select_world(PlayerFormRespondedEvent event, Object data) {
+		String level = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
+		selectedLevel.put(event.getPlayer().getName(), level);
+
+		SimpleDialog.sendDialog(this, "form_delete_select_area", event.getPlayer(), SimpleDialog.Type.FILTERING, new ArrayList<String>(ClickManager.getIt().getAll(level)));
 	}
 
 	public void form_delete_select_area(PlayerFormRespondedEvent event, Object data) {
-		String area = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
-		areas.getSection(selectedWorld.get(event.getPlayer().getName())).remove(area);
-		areas.save();
+		String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
+		String world = selectedLevel.get(event.getPlayer().getName());
+
+		ClickManager.getIt().removeClick(ClickManager.getIt().getClick(world,name));
+
 		SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "삭제되었습니다.");
 	}
 
@@ -165,7 +181,7 @@ public class CustomizerClick extends CustomizerBase {
 	}
 
 	// END
-	HashMap<Player, HashMap<String, Object>> queue = new HashMap<>();
+	HashMap<Player, Click> queue = new HashMap<>();
 
 	@Override
 	public void event(Event e) {
@@ -179,73 +195,179 @@ public class CustomizerClick extends CustomizerBase {
 				return;
 
 			if (queue.containsKey(event.getPlayer())) {
-				if (!queue.get(event.getPlayer()).containsKey("fstPos")) {// save first pos
-					queue.get(event.getPlayer()).put("fstPos", event.getBlock());
-					SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "첫번째 지점이 저장되었습니다.\n두번째 지점을 클릭해주세요.");
-				} else {// second pos
-					String name = (String) queue.get(event.getPlayer()).get("name");
-					String script = (String) queue.get(event.getPlayer()).get("script");
-					String world = event.getBlock().getLevel().getName();
-					Position fstPos = (Position) queue.get(event.getPlayer()).get("fstPos");
-					Position sndPos = event.getBlock();
-					if (fstPos.getLevel() != sndPos.getLevel()) {
-						SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "첫번째 지점과 두번째 지점의 월드는 같아야합니다.");
-						queue.remove(event.getPlayer());
-						return;
-					}
+				Click area = queue.get(event.getPlayer());
+				if (area.getFstPos() == null) {
+					area.setLevel(event.getPlayer().getLevel().getName());
+					area.setFstPos(event.getBlock());
 
-					areas.set(world + "." + name + ".name", name);
-					areas.set(world + "." + name + ".script", script);
-					areas.set(world + "." + name + ".world", fstPos.getLevel().getName());
-					areas.set(world + "." + name + ".fstPos", fstPos.getFloorX() + "," + fstPos.getFloorY() + "," + fstPos.getFloorZ());
-					areas.set(world + "." + name + ".sndPos", sndPos.getFloorX() + "," + sndPos.getFloorY() + "," + sndPos.getFloorZ());
-					areas.save();
+					SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "첫번째 지점이 성공적으로 저장되었습니다.");
+				} else if (area.getSndPos() == null) {
+					if (area.getLevel().equals(event.getBlock().getLevel().getName()))
+						area.setSndPos(event.getBlock());
 
-					SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "영역이 저장되었습니다.");
+					if (area.isValid()) {
+						ClickManager.getIt().addClick(area);
 
+						SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "성공적으로 저장되었습니다.");
+					} else
+						SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "오류가 발생했습니다.");
 					queue.remove(event.getPlayer());
 				}
-			} else {
-				Position pos = event.getBlock().getLocation().clone();
-				ArrayList<String> list = getAreas(pos);
+			}else{
+				ArrayList<Click> clicks = ClickManager.getIt().getClicks(event.getBlock());
+				for (Click click : clicks)
+					CustomizerExecutor.executeScript(this,event.getPlayer(),CustomizerScript.getScript(click.getScript()),event,click);
+			}
+		}
+	}
+}
 
-				for (String area : list)
-					CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(getScript(pos.level.getName(), area)), event, area);
+class ClickManager {
+	private static ClickManager instance;
+	File CFG_PATH;
+	Config cfg;
+
+	public ClickManager(File CFG_PATH) {
+		instance = this;
+
+		this.CFG_PATH = CFG_PATH;
+		cfg = new Config(CFG_PATH, Config.YAML);
+	}
+
+	HashMap<String,HashMap<String,Click>> areas = new HashMap();
+	public void loadAll(){
+		for (String level : getLevels()) {
+			ConfigSection rawClicks = cfg.getSection(level);
+			for (String name : getAll(level)) {
+				ConfigSection rawClick = cfg.getSection(name);
+
+				Click area = new Click(rawClick);
+				if (!areas.containsKey(level))
+					areas.put(level, new HashMap<String, Click>());
+				areas.get(level).put(area.getName(), area);
 			}
 		}
 	}
 
-	//////////////////////////////////
+	public void addClick( Click area){
+		cfg.set(area.getLevel() + "." + area.getName(), area.getData());
+		cfg.save();
 
-	public ArrayList<String> getAreas(Position pos) {
-		ArrayList<String> list = new ArrayList<>();
+		if (!areas.containsKey(area.getLevel()))
+			areas.put(area.getLevel(), new HashMap<String, Click>());
+		areas.get(area.getLevel()).put(area.getName(), area);
+	}
+	public void editClick(Click area){
+		addClick(area);
+	}
+	public boolean isClick(Level level,String name){
+		if (areas.containsKey(level) && areas.get(level).containsKey(name))
+			return true;
+		return false;
+	}
+	public Click getClick(String level, String name){
+		return areas.get(level).get(name);
+	}
+	public ArrayList<Click> getClicks(Position pos){
+		String level = pos.getLevel().getName();
+		if (!areas.containsKey(level))
+			return new ArrayList<>();
 
-		ConfigSection ar = areas.getSection(pos.getLevel().getName());
-		for (String key : ar.getKeys(false)) {
-			String[] coord = ar.getString(key + ".fstPos").split(",");
-			int[] fstPos = new int[] { Integer.parseInt(coord[0]), Integer.parseInt(coord[1]), Integer.parseInt(coord[2]) };
-			coord = ar.getString(key + ".sndPos").split(",");
-			int[] sndPos = new int[] { Integer.parseInt(coord[0]), Integer.parseInt(coord[1]), Integer.parseInt(coord[2]) };
+		ArrayList<Click> wholeClicks = new ArrayList<>(areas.get(level).values());
 
-			int minX = Math.min(fstPos[0], sndPos[0]);
-			int maxX = Math.max(fstPos[0], sndPos[0]);
-			int minY = Math.min(fstPos[1], fstPos[1]);
-			int maxY = Math.max(fstPos[1], fstPos[2]);
-			int minZ = Math.min(fstPos[2], fstPos[2]);
-			int maxZ = Math.max(fstPos[2], sndPos[2]);
+		ArrayList<Click> list = new ArrayList<>();
 
-			if (minX <= pos.getX() && pos.getX() <= maxX)
-				if (minY <= pos.getY() && pos.getY() <= maxY)
-					if (minZ <= pos.getZ() && pos.getZ() <= maxZ)
-						list.add(key);
-		}
+		for (Click area : wholeClicks)
+			if (area.isIn(pos))
+				list.add(area);
 
-		if (list.size() == 0)
-			list.add("UNKNOWN");
 		return list;
 	}
+	public void removeClick(Click area){
+		if (areas.containsKey(area.getLevel()))
+			areas.get(area.getLevel()).remove(area.getName());
 
-	public String getScript(String world, String name) {
-		return areas.getString(world + "." + name + ".script");
+		cfg.getSection(area.getLevel()).remove(area.getName());
+		if (areas.get(area.getLevel()).size() == 0){
+			areas.remove(area.getLevel());
+			cfg.remove(area.getLevel());
+		}
+		cfg.save();
+	}
+
+	public ArrayList<String> getLevels(){ return new ArrayList<String>(cfg.getKeys(false)); }
+	public ArrayList<String> getAll(String lvl){ return new ArrayList<String>(cfg.getSection(lvl).getKeys(false)); }
+
+	public void reload(){ areas = new HashMap<>(); loadAll(); }
+
+	public static ClickManager getIt(){return instance;}
+}
+
+class Click {
+	private String name = null;
+	private String script = null;
+	private String level = null;
+	private Vector3 pos1 = null;
+	private Vector3 pos2 = null;
+
+	public Click(){
+	}
+	public Click(ConfigSection datas){
+		setName(datas.getString("Name"));
+		setScript(datas.getString("Script"));
+		setLevel(datas.getString("Level"));
+		setFstPos(new Vector3(datas.getInt("fst.x"),datas.getInt("fst.y"),datas.getInt("fst.z")));
+		setSndPos(new Vector3(datas.getInt("snd.x"),datas.getInt("snd.y"),datas.getInt("snd.z")));
+	}
+
+	public void setName(String name){this.name=name;}
+	public String getName(){return name;}
+	public void setScript(String script){this.script=script;}
+	public String getScript(){return script;}
+	public void setLevel(String level){this.level=level;}
+	public String getLevel(){return level;}
+	public void setFstPos(Vector3 pos){this.pos1=pos;}
+	public Vector3 getFstPos(){return pos1;}
+	public void setSndPos(Vector3 pos){this.pos2=pos;}
+	public Vector3 getSndPos(){ return pos2; }
+
+	public boolean isIn(Position pos) {
+		if (isValid())
+			if (level.equals(pos.getLevel().getName()))
+				if (isMedium(pos1.getFloorX(), pos.getFloorX(), pos2.getFloorX()))
+					if (isMedium(pos1.getFloorY(), pos.getFloorY(), pos2.getFloorY()))
+						if (isMedium(pos1.getFloorZ(), pos.getFloorZ(), pos2.getFloorZ()))
+							return true;
+		return false;
+	}
+	private boolean isMedium(int num1,int var,int num2){
+		int max = Math.max(num1, num2);
+		int min = Math.min(num1, num2);
+		if (min <= var && var <= max)
+			return true;
+		else
+			return false;
+	}
+
+	public boolean isValid(){
+		if (name != null && script != null && level != null && pos1 != null && pos2 != null)
+			return true;
+		return false;
+	}
+
+	public ConfigSection getData() {
+		ConfigSection section = new ConfigSection();
+
+		section.set("Name", getName());
+		section.set("Script", getScript());
+		section.set("Level", getLevel());
+		section.set("fst.x", getFstPos().getFloorX());
+		section.set("fst.y", getFstPos().getFloorY());
+		section.set("fst.z", getFstPos().getFloorZ());
+		section.set("snd.x", getSndPos().getFloorX());
+		section.set("snd.y", getSndPos().getFloorY());
+		section.set("snd.z", getSndPos().getFloorZ());
+
+		return section;
 	}
 }

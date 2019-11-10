@@ -9,8 +9,10 @@ import cn.nukkit.entity.data.Skin;
 import cn.nukkit.event.Event;
 import cn.nukkit.event.entity.EntityInteractEvent;
 import cn.nukkit.event.player.PlayerFormRespondedEvent;
+import cn.nukkit.event.player.PlayerInteractEntityEvent;
 import cn.nukkit.event.player.PlayerLoginEvent;
 import cn.nukkit.event.player.PlayerTeleportEvent;
+import cn.nukkit.event.server.DataPacketReceiveEvent;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.element.ElementInput;
 import cn.nukkit.form.element.ElementSlider;
@@ -19,12 +21,10 @@ import cn.nukkit.form.response.FormResponseCustom;
 import cn.nukkit.form.response.FormResponseSimple;
 import cn.nukkit.form.window.FormWindowCustom;
 import cn.nukkit.form.window.FormWindowSimple;
+import cn.nukkit.inventory.transaction.data.UseItemOnEntityData;
 import cn.nukkit.item.Item;
 import cn.nukkit.level.Position;
-import cn.nukkit.network.protocol.AddPlayerPacket;
-import cn.nukkit.network.protocol.PlayerListPacket;
-import cn.nukkit.network.protocol.PlayerSkinPacket;
-import cn.nukkit.network.protocol.RemoveEntityPacket;
+import cn.nukkit.network.protocol.*;
 import cn.nukkit.utils.Config;
 import iKguana.customizer.Customizer;
 import iKguana.customizer.CustomizerCommands;
@@ -33,7 +33,6 @@ import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.interfaces.CustomizerBase;
 import iKguana.customizer.tools.CT;
 import iKguana.simpledialog.SimpleDialog;
-import sun.misc.IOUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -51,7 +50,7 @@ public class CustomizerEntity extends CustomizerBase {
 
         CustomizerEvents.playerLoginEvent.add(this);
         CustomizerEvents.playerTeleportEvent.add(this);
-        CustomizerEvents.entityInteractEvent.add(this);
+        CustomizerEvents.dataPacketReceiveEvent.add(this);
 
         EntityManager.getIt().loadAllEntities();
 
@@ -82,8 +81,8 @@ public class CustomizerEntity extends CustomizerBase {
             window.addElement(new ElementInput("NAMETAG", "String"));
             window.addElement(new ElementInput("SKIN", "String"));
             window.addElement(new ElementInput("SCRIPT", "String"));
-            window.addElement(new ElementSlider("PITCH",-180,180,1,0));
-            window.addElement(new ElementSlider("PITCH",-180,180,1,0));
+            window.addElement(new ElementSlider("PITCH", -180, 180, 1, 0));
+            window.addElement(new ElementSlider("PITCH", -180, 180, 1, 0));
 
             SimpleDialog.sendDialog(this, "form_ent_add", event.getPlayer(), window);
         } else if (label.equals("엔티티 삭제")) {
@@ -99,9 +98,9 @@ public class CustomizerEntity extends CustomizerBase {
         String script = response.getInputResponse(2).trim();
 
         if (nametag.length() != 0) {
-                EntityManager.getIt().registerEntity(nametag, pos, skin, script, (int)response.getSliderResponse(3), (int)response.getSliderResponse(4));
+            EntityManager.getIt().registerEntity(nametag, pos, skin, script, (int) response.getSliderResponse(3), (int) response.getSliderResponse(4));
 
-                SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "저장되었습니다.");
+            SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "저장되었습니다.");
         } else
             SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "NAMETAG CANNOT BE BLANK. USE __.");
     }
@@ -109,11 +108,29 @@ public class CustomizerEntity extends CustomizerBase {
     @Override
     public void event(Event e) {
         if (e instanceof PlayerLoginEvent) {
-
+            PlayerLoginEvent event = (PlayerLoginEvent) e;
+            EntityManager.getIt().spawnAll(event.getPlayer());
         } else if (e instanceof PlayerTeleportEvent) {
+            PlayerTeleportEvent event = (PlayerTeleportEvent) e;
+            if (event.getFrom().getLevel() != event.getTo().getLevel())
+                EntityManager.getIt().despawnAll(event.getPlayer(), event.getFrom().getLevel().getName());
+        } else if (e instanceof DataPacketReceiveEvent) {
+            DataPacketReceiveEvent event = (DataPacketReceiveEvent) e;
 
-        } else if (e instanceof EntityInteractEvent) {
+            if (event.getPacket() instanceof InventoryTransactionPacket) {
+                InventoryTransactionPacket pk = (InventoryTransactionPacket) event.getPacket();
 
+                if (pk.transactionType == InventoryTransactionPacket.TYPE_USE_ITEM_ON_ENTITY) {
+                    UseItemOnEntityData data = (UseItemOnEntityData) pk.transactionData;
+                    CEnt ent = EntityManager.getIt().getEntity(event.getPlayer().getLevel().getName(), data.entityRuntimeId);
+//                        if (event.getPlayer().isOp() && data.itemInHand.equals(editor, false)) {
+//                            sendDialog(event.getPlayer(), dialogType.EDITBOT, data.entityRuntimeId);
+//                        } else
+                    event.getPlayer().sendMessage(data.entityRuntimeId + "");
+                    if (ent instanceof CEnt)
+                        ent.execute(this, event.getPlayer(), event, ent);
+                }
+            }
         }
     }
 }
@@ -131,6 +148,8 @@ class EntityManager {
 
         CFG_PATH = new File(DIR_PATH, "CustmoizerEntity.yml");
         cfg = new Config(CFG_PATH, Config.YAML);
+
+        loadAllEntities();
     }
 
     public Skin getSkin(String name) {
@@ -171,6 +190,20 @@ class EntityManager {
         }
     }
 
+    public void loadAllEntities() {
+        for (String level : cfg.getKeys(false)) {
+            ArrayList<HashMap<String, Object>> list = (ArrayList<HashMap<String, Object>>) cfg.get(level);
+            for (HashMap<String, Object> m : list) {
+                Position pos = new Position((int) m.get("x"), (int) m.get("y"), (int) m.get("z"), Server.getInstance().getLevelByName(level));
+                CEnt bot = new CEnt((String) m.get("tag"), pos, (String) m.get("skin"), (String) m.get("script"), (int) m.get("pitch"), (int) m.get("yaw"));
+                if (!entities.containsKey(level))
+                    entities.put(level, new ArrayList<>());
+                entities.get(level).add(bot);
+                bot.spawnToAll();
+            }
+        }
+    }
+
     public void registerEntity(String nametag, Position pos, String script, String skin, int pitch, int yaw) {
         CEnt ent = new CEnt(nametag, pos, script, skin, pitch, yaw);
 
@@ -190,13 +223,26 @@ class EntityManager {
 
     HashMap<String, ArrayList<CEnt>> entities = new HashMap<>();
 
-    public CEnt getEntity(String level, String nametag) {
-
+    public CEnt getEntity(String level, long entId) {
+        if (entities.containsKey(level))
+            for (CEnt ent : entities.get(level))
+                if (ent.id == entId)
+                    return ent;
         return null;
     }
 
-    public void loadAllEntities() {
 
+    public void spawnAll(Player player) {
+        String level = player.getLevel().getName();
+        if (entities.containsKey(level))
+            for (CEnt ent : entities.get(level))
+                ent.spawnTo(player);
+    }
+
+    public void despawnAll(Player player, String level) {
+        if (entities.containsKey(level))
+            for (CEnt ent : entities.get(level))
+                ent.despawnTo(player);
     }
 
     public static EntityManager getIt() {
@@ -210,7 +256,7 @@ class CEnt {
     public long id;
     public int x, y, z;
     public String level;
-    public Skin skin;
+    public String skin;
     public String script;
     public int pitch, yaw;
 
@@ -222,7 +268,7 @@ class CEnt {
         this.z = pos.getFloorZ();
         this.level = pos.getLevel().getName();
         this.id = Entity.entityCount++;
-        this.skin = EntityManager.getIt().getSkin(skin);
+        this.skin = skin;
         this.script = script;
         this.pitch = pitch;
         this.yaw = yaw;
@@ -254,7 +300,7 @@ class CEnt {
 
         PlayerListPacket pk_ = new PlayerListPacket();
         pk_.type = 0;
-        pk_.entries = new PlayerListPacket.Entry[]{new PlayerListPacket.Entry(uuid, id, "", skin, "")};
+        pk_.entries = new PlayerListPacket.Entry[]{new PlayerListPacket.Entry(uuid, id, "", EntityManager.getIt().getSkin(skin), "")};
         player.batchDataPacket(pk_);
 
         pk_.type = 1;
