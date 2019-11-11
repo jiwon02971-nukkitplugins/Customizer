@@ -55,21 +55,27 @@ public class CustomizerArea extends CustomizerBase {
     public String getCustomPlaceHolder(String tag, Object data) {
         switch (tag) {
             case "enter":
-                return String.valueOf(((Object[]) data)[0]);
+                return String.valueOf(((Object[]) data)[1]);
+
             case "area":
-                return (String) ((Object[]) data)[1];
+                return ((Area)((Object[])data)[2]).getName();
         }
         return super.getCustomPlaceHolder(tag, data);
     }
 
     @Override
     public String getCustomGlobalPlaceHolder(String tag, String arg, Object data) {
-        switch (tag) {
-            case "aareas":
-                break;
-
-            case "isin":
-               break;
+        if (arg.equals("areas")) {
+            if (isPlayerOnline(arg))
+                return ALtoString(AreaManager.getIt().getAreas(getPlayerOnline(arg)));
+        } else if (arg.equals("isin")) {
+            if (arg.indexOf("&&") != -1)
+                if (isPlayerOnline(arg.substring(0, arg.indexOf("&&")))) {
+                    Player player = getPlayerOnline(arg.substring(0, arg.indexOf("&&")));
+                    if (AreaManager.getIt().isArea(player.getLevel().getName(), arg.substring(arg.indexOf("&&") + 2)))
+                        return String.valueOf(true);
+                    else return String.valueOf(false);
+                }
         }
         return super.getCustomGlobalPlaceHolder(tag, arg, data);
     }
@@ -250,9 +256,9 @@ public class CustomizerArea extends CustomizerBase {
                         in.add(toarea);
 
                 for (Area i : in)
-                    CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(i.getScript()), event, new Object[]{true, i});
+                    CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(i.getScript()), event, new Object[]{event, true, i});
                 for (Area o : out)
-                    CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(o.getScript()), event, new Object[]{false, o});
+                    CustomizerExecutor.executeScript(this, event.getPlayer(), CustomizerScript.getScript(o.getScript()), event, new Object[]{event, false, o});
             }
         }
     }
@@ -296,7 +302,7 @@ class AreaManager {
     public void editArea(Area area){
         addArea(area);
     }
-    public boolean isArea(Level level,String name){
+    public boolean isArea(String level,String name){
         if (areas.containsKey(level) && areas.get(level).containsKey(name))
             return true;
         return false;

@@ -64,6 +64,7 @@ public class CustomizerEntity extends CustomizerBase {
                 FormWindowSimple window = new FormWindowSimple("커스텀 엔티티", "사용하고싶은 기능을 클릭해주세요.");
                 window.addButton(new ElementButton("엔티티 추가"));
                 window.addButton(new ElementButton("엔티티 편집"));
+                window.addButton(new ElementButton("엔티티 편집모드 ON/OFF"));
                 window.addButton(new ElementButton("엔티티 삭제"));
                 SimpleDialog.sendDialog(this, "form_ent_menu", (Player) sender, window);
             } else
@@ -124,8 +125,8 @@ public class CustomizerEntity extends CustomizerBase {
                     UseItemOnEntityData data = (UseItemOnEntityData) pk.transactionData;
                     CEnt ent = EntityManager.getIt().getEntity(event.getPlayer().getLevel().getName(), data.entityRuntimeId);
 //                        if (event.getPlayer().isOp() && data.itemInHand.equals(editor, false)) {
-//                            sendDialog(event.getPlayer(), dialogType.EDITBOT, data.entityRuntimeId);
-//                        } else
+////                            sendDialog(event.getPlayer(), dialogType.EDITBOT, data.entityRuntimeId);
+////                        } else
                     event.getPlayer().sendMessage(data.entityRuntimeId + "");
                     if (ent instanceof CEnt)
                         ent.execute(this, event.getPlayer(), event, ent);
@@ -158,36 +159,36 @@ class EntityManager {
         skin.setGeometryName("geometry.humanoid.customizer");
 
         File file = new File(SKINS_DIR, name + ".zip");
+        if (file.isFile())
+            try {
+                ZipFile zipFile = new ZipFile(file);
 
-        try {
-            ZipFile zipFile = new ZipFile(file);
+                Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    InputStream stream = zipFile.getInputStream(entry);
 
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                InputStream stream = zipFile.getInputStream(entry);
+                    if (entry.getName().endsWith("model.json")) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+                        String geometry = "";
+                        String line;
+                        while ((line = reader.readLine()) != null)
+                            geometry += line;
+                        reader.close();
 
-                if (entry.getName().endsWith("model.json")) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
-                    String geometry = "";
-                    String line;
-                    while ((line = reader.readLine()) != null)
-                        geometry += line;
-                    reader.close();
-
-                    skin.setGeometryData(geometry);
-                } else if (entry.getName().endsWith("skin.png")) {
-                    BufferedImage png = ImageIO.read(zipFile.getInputStream(entry));
-                    skin.setSkinData(png);
+                        skin.setGeometryData(geometry);
+                    } else if (entry.getName().endsWith("skin.png")) {
+                        BufferedImage png = ImageIO.read(zipFile.getInputStream(entry));
+                        skin.setSkinData(png);
+                    }
+                    stream.close();
                 }
-                stream.close();
-            }
 
-            return skin;
-        } catch (Exception err) {
-            return new Skin();
-        }
+                return skin;
+            } catch (Exception err) {
+            }
+        return new Skin();
     }
 
     public void loadAllEntities() {
@@ -298,14 +299,16 @@ class CEnt {
         pk.item = Item.get(Item.AIR);
         player.batchDataPacket(pk);
 
-        PlayerListPacket pk_ = new PlayerListPacket();
-        pk_.type = 0;
-        pk_.entries = new PlayerListPacket.Entry[]{new PlayerListPacket.Entry(uuid, id, "", EntityManager.getIt().getSkin(skin), "")};
-        player.batchDataPacket(pk_);
+        if (false) {//TODO FIX IT | It occurs crash in 1.13.
+            PlayerListPacket pk_ = new PlayerListPacket();
+            pk_.type = 0;
+            pk_.entries = new PlayerListPacket.Entry[]{new PlayerListPacket.Entry(uuid, id, "", EntityManager.getIt().getSkin(skin), "")};
+            player.batchDataPacket(pk_);
 
-        pk_.type = 1;
-        pk_.entries = new PlayerListPacket.Entry[]{new PlayerListPacket.Entry(uuid)};
-        player.batchDataPacket(pk_);
+            pk_.type = 1;
+            pk_.entries = new PlayerListPacket.Entry[]{new PlayerListPacket.Entry(uuid)};
+            player.batchDataPacket(pk_);
+        }
     }
 
     public void spawnToAll() {

@@ -63,12 +63,6 @@ public class CustomizerExecutor extends RFC {
                             else
                                 str = str.replace(s(ph), String.valueOf(false));
                             break;
-                        case "money":
-                            if (isPlayerOnline(after))
-                                str = str.replace(s(ph), String.valueOf(MoneyAPI.getInstance().getMoney(Server.getInstance().getPlayerExact(after).getName())));
-                            else
-                                str = str.replace(s(ph), NULL);
-                            break;
                         case "health":
                             if (isPlayerOnline(after))
                                 str = str.replace(s(ph), String.valueOf(Server.getInstance().getPlayerExact(after).getHealth()));
@@ -99,6 +93,7 @@ public class CustomizerExecutor extends RFC {
                             else
                                 str = str.replace(s(ph), String.valueOf(false));
                             break;
+
                         case "leveltime":
                             if (isLevel(after))
                                 str = str.replace(s(ph), String.valueOf(getLevel(after)));
@@ -106,10 +101,18 @@ public class CustomizerExecutor extends RFC {
                                 str = str.replace(s(ph), NULL);
                             break;
                         case "realtime":
-                            str = str.replace(s(ph), (new SimpleDateFormat(after, Locale.KOREA)).format(new Date()));
+                            str = str.replace(s(ph), (new SimpleDateFormat(after)).format(new Date()));
                             break;
                         case "calculate":
                             str = str.replace(s(ph), String.valueOf(calculate(after)));
+                            break;
+
+                        //External Plugin METHOD
+                        case "money":
+                            if (isPlayerOnline(after))
+                                str = str.replace(s(ph), String.valueOf(MoneyAPI.getInstance().getMoney(Server.getInstance().getPlayerExact(after).getName())));
+                            else
+                                str = str.replace(s(ph), NULL);
                             break;
 
                         case "pvar":

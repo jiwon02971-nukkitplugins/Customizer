@@ -11,11 +11,9 @@ import cn.nukkit.command.CommandSender;
 import cn.nukkit.event.Event;
 import cn.nukkit.event.player.PlayerFormRespondedEvent;
 import cn.nukkit.event.player.PlayerInteractEvent;
-import cn.nukkit.event.player.PlayerMoveEvent;
 import cn.nukkit.form.element.ElementButton;
 import cn.nukkit.form.element.ElementInput;
 import cn.nukkit.form.element.ElementLabel;
-import cn.nukkit.form.element.ElementToggle;
 import cn.nukkit.form.response.FormResponseCustom;
 import cn.nukkit.form.response.FormResponseSimple;
 import cn.nukkit.form.window.FormWindowCustom;
@@ -44,25 +42,15 @@ public class CustomizerClick extends CustomizerBase {
 		CustomizerEvents.playerInteractEvent.add(this);
 		CustomizerEvents.playerMoveEvent.add(this);
 
-		CustomizerExecutor.customGlobalPlaceHolders_.put("clicks", this);
 	}
 
 	@Override
 	public String getCustomPlaceHolder(String tag, Object data) {
 		switch (tag) {
-			case "area":
+			case "name":
 				return ((Click)data).getName();
 		}
 		return super.getCustomPlaceHolder(tag, data);
-	}
-
-	@Override
-	public String getCustomGlobalPlaceHolder(String tag, String arg, Object data) {
-		switch (tag) {
-			case "clicks":
-				break;
-		}
-		return super.getCustomGlobalPlaceHolder(tag, arg, data);
 	}
 
 	@Override
@@ -87,7 +75,6 @@ public class CustomizerClick extends CustomizerBase {
 			FormWindowCustom window = new FormWindowCustom("영역 추가");
 			window.addElement(new ElementInput("영역의 이름을 입력해주세요."));
 			window.addElement(new ElementInput("사용할 스크립트를 입력해주세요."));
-			window.addElement(new ElementToggle("y값 체크", false));
 
 			SimpleDialog.sendDialog(this, "form_add_area", event.getPlayer(), window);
 		} else if (text.equals("영역 편집")) {
@@ -215,6 +202,7 @@ public class CustomizerClick extends CustomizerBase {
 				}
 			}else{
 				ArrayList<Click> clicks = ClickManager.getIt().getClicks(event.getBlock());
+
 				for (Click click : clicks)
 					CustomizerExecutor.executeScript(this,event.getPlayer(),CustomizerScript.getScript(click.getScript()),event,click);
 			}
@@ -234,7 +222,7 @@ class ClickManager {
 		cfg = new Config(CFG_PATH, Config.YAML);
 	}
 
-	HashMap<String,HashMap<String,Click>> areas = new HashMap();
+	HashMap<String,HashMap<String,Click>> clicks= new HashMap();
 	public void loadAll(){
 		for (String level : getLevels()) {
 			ConfigSection rawClicks = cfg.getSection(level);
@@ -242,9 +230,9 @@ class ClickManager {
 				ConfigSection rawClick = cfg.getSection(name);
 
 				Click area = new Click(rawClick);
-				if (!areas.containsKey(level))
-					areas.put(level, new HashMap<String, Click>());
-				areas.get(level).put(area.getName(), area);
+				if (!clicks.containsKey(level))
+					clicks.put(level, new HashMap<String, Click>());
+				clicks.get(level).put(area.getName(), area);
 			}
 		}
 	}
@@ -253,27 +241,27 @@ class ClickManager {
 		cfg.set(area.getLevel() + "." + area.getName(), area.getData());
 		cfg.save();
 
-		if (!areas.containsKey(area.getLevel()))
-			areas.put(area.getLevel(), new HashMap<String, Click>());
-		areas.get(area.getLevel()).put(area.getName(), area);
+		if (!clicks.containsKey(area.getLevel()))
+			clicks.put(area.getLevel(), new HashMap<String, Click>());
+		clicks.get(area.getLevel()).put(area.getName(), area);
 	}
 	public void editClick(Click area){
 		addClick(area);
 	}
 	public boolean isClick(Level level,String name){
-		if (areas.containsKey(level) && areas.get(level).containsKey(name))
+		if (clicks.containsKey(level) && clicks.get(level).containsKey(name))
 			return true;
 		return false;
 	}
 	public Click getClick(String level, String name){
-		return areas.get(level).get(name);
+		return clicks.get(level).get(name);
 	}
 	public ArrayList<Click> getClicks(Position pos){
 		String level = pos.getLevel().getName();
-		if (!areas.containsKey(level))
+		if (!clicks.containsKey(level))
 			return new ArrayList<>();
 
-		ArrayList<Click> wholeClicks = new ArrayList<>(areas.get(level).values());
+		ArrayList<Click> wholeClicks = new ArrayList<>(clicks.get(level).values());
 
 		ArrayList<Click> list = new ArrayList<>();
 
@@ -284,12 +272,12 @@ class ClickManager {
 		return list;
 	}
 	public void removeClick(Click area){
-		if (areas.containsKey(area.getLevel()))
-			areas.get(area.getLevel()).remove(area.getName());
+		if (clicks.containsKey(area.getLevel()))
+			clicks.get(area.getLevel()).remove(area.getName());
 
 		cfg.getSection(area.getLevel()).remove(area.getName());
-		if (areas.get(area.getLevel()).size() == 0){
-			areas.remove(area.getLevel());
+		if (clicks.get(area.getLevel()).size() == 0){
+			clicks.remove(area.getLevel());
 			cfg.remove(area.getLevel());
 		}
 		cfg.save();
@@ -298,7 +286,7 @@ class ClickManager {
 	public ArrayList<String> getLevels(){ return new ArrayList<String>(cfg.getKeys(false)); }
 	public ArrayList<String> getAll(String lvl){ return new ArrayList<String>(cfg.getSection(lvl).getKeys(false)); }
 
-	public void reload(){ areas = new HashMap<>(); loadAll(); }
+	public void reload(){ clicks = new HashMap<>(); loadAll(); }
 
 	public static ClickManager getIt(){return instance;}
 }
