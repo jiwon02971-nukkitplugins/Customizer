@@ -18,13 +18,13 @@ import cn.nukkit.form.response.FormResponseSimple;
 import cn.nukkit.form.window.FormWindowCustom;
 import cn.nukkit.form.window.FormWindowSimple;
 import cn.nukkit.utils.Config;
+import iKguana.artonline.SimpleDialog.SimpleDialog;
 import iKguana.customizer.Customizer;
 import iKguana.customizer.CustomizerCommands;
 import iKguana.customizer.CustomizerEvents;
 import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.interfaces.CustomizerBase;
 import iKguana.customizer.tools.CT;
-import iKguana.simpledialog.SimpleDialog;
 
 public class CustomizerCommand extends CustomizerBase {
     public static File CFG_PATH;

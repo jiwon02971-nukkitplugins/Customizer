@@ -3,6 +3,7 @@ iKguana\customizer\commands\DialogWindowCustom$E_Type.class
 iKguana\customizer\CustomizerEvents.class
 iKguana\customizer\commands\D_Type.class
 iKguana\customizer\commands\AreaManager.class
+iKguana\customizer\commands\CScript.class
 iKguana\customizer\commands\DialogWindowModal.class
 iKguana\customizer\tools\CT.class
 iKguana\customizer\ScriptTask.class
@@ -12,7 +13,9 @@ iKguana\customizer\commands\DialogWindowSimple.class
 iKguana\customizer\commands\CustomizerScript.class
 iKguana\customizer\commands\DialogWindowCustom.class
 iKguana\customizer\commands\CustomizerEvent.class
+iKguana\customizer\interfaces\ScriptBase.class
 iKguana\customizer\commands\DialogWindow.class
+iKguana\customizer\commands\EventManager.class
 iKguana\customizer\commands\EntityManager.class
 iKguana\customizer\commands\CEnt.class
 iKguana\customizer\CustomizerCommands.class
@@ -20,11 +23,13 @@ iKguana\customizer\commands\CustomizerDialog.class
 iKguana\customizer\commands\ClickManager.class
 iKguana\customizer\CustomizerVariable.class
 iKguana\customizer\interfaces\RFC.class
+iKguana\customizer\commands\ScriptManager.class
 iKguana\customizer\commands\DialogManager.class
 iKguana\customizer\commands\Area.class
 iKguana\customizer\commands\Click.class
 iKguana\customizer\commands\CustomizerArea.class
 iKguana\customizer\commands\CommandManager.class
+iKguana\customizer\tools\Expression.class
 iKguana\customizer\commands\CustomizerClick.class
 iKguana\customizer\interfaces\CustomizerBase.class
 iKguana\customizer\Customizer.class

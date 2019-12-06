@@ -23,13 +23,13 @@ import cn.nukkit.level.Position;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.utils.Config;
 import cn.nukkit.utils.ConfigSection;
+import iKguana.artonline.SimpleDialog.SimpleDialog;
 import iKguana.customizer.Customizer;
 import iKguana.customizer.CustomizerCommands;
 import iKguana.customizer.CustomizerEvents;
 import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.interfaces.CustomizerBase;
 import iKguana.customizer.tools.CT;
-import iKguana.simpledialog.SimpleDialog;
 
 public class CustomizerClick extends CustomizerBase {
 	public CustomizerClick() {

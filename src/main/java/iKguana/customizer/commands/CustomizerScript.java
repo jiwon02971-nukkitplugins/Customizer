@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import iKguana.artonline.SimpleDialog.SimpleDialog;
 import iKguana.customizer.interfaces.ScriptBase;
 import org.jline.utils.InputStreamReader;
 
@@ -25,7 +26,6 @@ import iKguana.customizer.CustomizerCommands;
 import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.interfaces.CustomizerBase;
 import iKguana.customizer.tools.CT;
-import iKguana.simpledialog.SimpleDialog;
 
 public class CustomizerScript extends CustomizerBase {
 

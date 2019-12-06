@@ -28,13 +28,13 @@ import cn.nukkit.level.Position;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.utils.Config;
 import cn.nukkit.utils.ConfigSection;
+import iKguana.artonline.SimpleDialog.SimpleDialog;
 import iKguana.customizer.Customizer;
 import iKguana.customizer.CustomizerCommands;
 import iKguana.customizer.CustomizerEvents;
 import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.interfaces.CustomizerBase;
 import iKguana.customizer.tools.CT;
-import iKguana.simpledialog.SimpleDialog;
 
 public class CustomizerArea extends CustomizerBase {
     public CustomizerArea() {
@@ -58,7 +58,7 @@ public class CustomizerArea extends CustomizerBase {
                 return String.valueOf(((Object[]) data)[1]);
 
             case "area":
-                return ((Area)((Object[])data)[2]).getName();
+                return ((Area) ((Object[]) data)[2]).getName();
         }
         return super.getCustomPlaceHolder(tag, data);
     }
@@ -127,7 +127,7 @@ public class CustomizerArea extends CustomizerBase {
         area.setName(name);
         area.setScript(script);
         area.setCheckHeight(checkHeight);
-        queue.put(event.getPlayer(),area);
+        queue.put(event.getPlayer(), area);
 
         SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "첫번째와 두번째 지점을 지정해주세요.");
     }
@@ -149,8 +149,8 @@ public class CustomizerArea extends CustomizerBase {
         window.addElement(new ElementLabel("구역을 편집합니다."));
         window.addElement(new ElementInput("스크립트", "입력해주세요.", area.getScript()));
         window.addElement(new ElementLabel("월드 : " + area.getLevel()));
-        window.addElement(new ElementLabel("1좌표 : " + area.getFstPos().getFloorX()+", "+area.getFstPos().getFloorY()+", "+area.getFstPos().getFloorZ()));
-        window.addElement(new ElementLabel("2좌표 : " + area.getSndPos().getFloorX()+", "+area.getSndPos().getFloorY()+", "+area.getSndPos().getFloorZ()));
+        window.addElement(new ElementLabel("1좌표 : " + area.getFstPos().getFloorX() + ", " + area.getFstPos().getFloorY() + ", " + area.getFstPos().getFloorZ()));
+        window.addElement(new ElementLabel("2좌표 : " + area.getSndPos().getFloorX() + ", " + area.getSndPos().getFloorY() + ", " + area.getSndPos().getFloorZ()));
         window.addElement(new ElementToggle("Y값 체크", area.getCheckHeight()));
 
         SimpleDialog.sendDialog(this, "form_edit_area", event.getPlayer(), window, area);
@@ -179,7 +179,7 @@ public class CustomizerArea extends CustomizerBase {
         String name = ((FormResponseSimple) event.getResponse()).getClickedButton().getText();
         String world = selectedLevel.get(event.getPlayer().getName());
 
-        AreaManager.getIt().removeArea(AreaManager.getIt().getArea(world,name));
+        AreaManager.getIt().removeArea(AreaManager.getIt().getArea(world, name));
 
         SimpleDialog.sendDialog(null, null, event.getPlayer(), SimpleDialog.Type.ONLY_TEXT, "삭제되었습니다.");
     }
@@ -276,8 +276,9 @@ class AreaManager {
         cfg = new Config(CFG_PATH, Config.YAML);
     }
 
-    HashMap<String,HashMap<String,Area>> areas = new HashMap();
-    public void loadAll(){
+    HashMap<String, HashMap<String, Area>> areas = new HashMap();
+
+    public void loadAll() {
         for (String level : getLevels()) {
             ConfigSection rawAreas = cfg.getSection(level);
             for (String name : getAll(level)) {
@@ -291,7 +292,7 @@ class AreaManager {
         }
     }
 
-    public void addArea( Area area){
+    public void addArea(Area area) {
         cfg.set(area.getLevel() + "." + area.getName(), area.getData());
         cfg.save();
 
@@ -299,18 +300,22 @@ class AreaManager {
             areas.put(area.getLevel(), new HashMap<String, Area>());
         areas.get(area.getLevel()).put(area.getName(), area);
     }
-    public void editArea(Area area){
+
+    public void editArea(Area area) {
         addArea(area);
     }
-    public boolean isArea(String level,String name){
+
+    public boolean isArea(String level, String name) {
         if (areas.containsKey(level) && areas.get(level).containsKey(name))
             return true;
         return false;
     }
-    public Area getArea(String level, String name){
+
+    public Area getArea(String level, String name) {
         return areas.get(level).get(name);
     }
-    public ArrayList<Area> getAreas(Position pos){
+
+    public ArrayList<Area> getAreas(Position pos) {
         String level = pos.getLevel().getName();
         if (!areas.containsKey(level))
             return new ArrayList<>();
@@ -325,7 +330,8 @@ class AreaManager {
 
         return list;
     }
-    public void removeArea(Area area){
+
+    public void removeArea(Area area) {
         if (areas.containsKey(area.getLevel())) {
             areas.get(area.getLevel()).remove(area.getName());
         }
@@ -338,12 +344,22 @@ class AreaManager {
         cfg.save();
     }
 
-    public ArrayList<String> getLevels(){ return new ArrayList<String>(cfg.getKeys(false)); }
-    public ArrayList<String> getAll(String lvl){ return new ArrayList<String>(cfg.getSection(lvl).getKeys(false)); }
+    public ArrayList<String> getLevels() {
+        return new ArrayList<String>(cfg.getKeys(false));
+    }
 
-    public void reload(){ areas = new HashMap<>(); loadAll(); }
+    public ArrayList<String> getAll(String lvl) {
+        return new ArrayList<String>(cfg.getSection(lvl).getKeys(false));
+    }
 
-    public static AreaManager getIt(){return instance;}
+    public void reload() {
+        areas = new HashMap<>();
+        loadAll();
+    }
+
+    public static AreaManager getIt() {
+        return instance;
+    }
 }
 
 class Area {
@@ -354,29 +370,65 @@ class Area {
     private Vector3 pos2 = null;
     private boolean checkHeight = true;
 
-    public Area(){
+    public Area() {
     }
-    public Area(ConfigSection datas){
+
+    public Area(ConfigSection datas) {
         setName(datas.getString("Name"));
         setScript(datas.getString("Script"));
         setLevel(datas.getString("Level"));
-        setFstPos(new Vector3(datas.getInt("fst.x"),datas.getInt("fst.y"),datas.getInt("fst.z")));
-        setSndPos(new Vector3(datas.getInt("snd.x"),datas.getInt("snd.y"),datas.getInt("snd.z")));
+        setFstPos(new Vector3(datas.getInt("fst.x"), datas.getInt("fst.y"), datas.getInt("fst.z")));
+        setSndPos(new Vector3(datas.getInt("snd.x"), datas.getInt("snd.y"), datas.getInt("snd.z")));
         setCheckHeight(datas.getBoolean("CheckHeight"));
     }
 
-    public void setName(String name){this.name=name;}
-    public String getName(){return name;}
-    public void setScript(String script){this.script=script;}
-    public String getScript(){return script;}
-    public void setLevel(String level){this.level=level;}
-    public String getLevel(){return level;}
-    public void setFstPos(Vector3 pos){this.pos1=pos;}
-    public Vector3 getFstPos(){return pos1;}
-    public void setSndPos(Vector3 pos){this.pos2=pos;}
-    public Vector3 getSndPos(){ return pos2; }
-    public void setCheckHeight(boolean bool){this.checkHeight=bool;}
-    public boolean getCheckHeight(){return checkHeight;}
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setScript(String script) {
+        this.script = script;
+    }
+
+    public String getScript() {
+        return script;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
+    }
+
+    public String getLevel() {
+        return level;
+    }
+
+    public void setFstPos(Vector3 pos) {
+        this.pos1 = pos;
+    }
+
+    public Vector3 getFstPos() {
+        return pos1;
+    }
+
+    public void setSndPos(Vector3 pos) {
+        this.pos2 = pos;
+    }
+
+    public Vector3 getSndPos() {
+        return pos2;
+    }
+
+    public void setCheckHeight(boolean bool) {
+        this.checkHeight = bool;
+    }
+
+    public boolean getCheckHeight() {
+        return checkHeight;
+    }
 
     public boolean isIn(Position pos) {
         if (isValid())
@@ -387,7 +439,8 @@ class Area {
                             return true;
         return false;
     }
-    private boolean isMedium(int num1,int var,int num2){
+
+    private boolean isMedium(int num1, int var, int num2) {
         int max = Math.max(num1, num2);
         int min = Math.min(num1, num2);
         if (min <= var && var <= max)
@@ -396,7 +449,7 @@ class Area {
             return false;
     }
 
-    public boolean isValid(){
+    public boolean isValid() {
         if (name != null && script != null && level != null && pos1 != null && pos2 != null)
             return true;
         return false;

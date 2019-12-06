@@ -26,13 +26,13 @@ import cn.nukkit.item.Item;
 import cn.nukkit.level.Position;
 import cn.nukkit.network.protocol.*;
 import cn.nukkit.utils.Config;
+import iKguana.artonline.SimpleDialog.SimpleDialog;
 import iKguana.customizer.Customizer;
 import iKguana.customizer.CustomizerCommands;
 import iKguana.customizer.CustomizerEvents;
 import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.interfaces.CustomizerBase;
 import iKguana.customizer.tools.CT;
-import iKguana.simpledialog.SimpleDialog;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

@@ -180,7 +180,7 @@ public class CustomizerExecutor extends RFC {
                     } else
                         sendError(player, "NOT_ENOUGH_ARGS");
                     break;
-                case "@RESETIF":
+                case "@ENDIF":
                     if (args.length >= 1) {
                         if (args[0].equals((String) task.localvars.get("flag")))
                             task.localvars.remove("flag");

@@ -3,8 +3,8 @@ package iKguana.customizer;
 import java.io.File;
 
 import cn.nukkit.utils.Config;
+import iKguana.artonline.Profiler.Profiler;
 import iKguana.customizer.interfaces.RFC;
-import iKguana.profiler.Profiler;
 
 public class CustomizerVariable extends RFC {
 	static Config globalVars;
