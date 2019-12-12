@@ -5,12 +5,12 @@ import iKguana.artonline.SubClasses.UsefulFunctions;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class Expression extends UsefulFunctions {
-    private static Expression instance;
+public class Calculator extends UsefulFunctions {
+    private static Calculator instance;
     ArrayList<ArrayList<String>> orderedTokens;
     ArrayList<String> tokens;
 
-    public Expression() {
+    public Calculator() {
         getTokens();
     }
 
@@ -118,9 +118,9 @@ public class Expression extends UsefulFunctions {
     }
 
 
-    public static Expression getIt() {
+    public static Calculator getIt() {
         if (instance == null)
-            instance = new Expression();
+            instance = new Calculator();
         return instance;
     }
 }

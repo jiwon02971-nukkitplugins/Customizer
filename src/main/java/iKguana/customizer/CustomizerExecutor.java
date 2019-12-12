@@ -157,7 +157,7 @@ public class CustomizerExecutor extends RFC {
             if (task.localvars.containsKey("flag") && !(fc.equals("@ELSE") || fc.equals("@RESETIF")))
                 return 0;
 
-            switch (fc) {
+            switch (fc) {//TODO 메소드 완성, 추가
                 case "@ENDSCRIPT":
                     return -1;
 

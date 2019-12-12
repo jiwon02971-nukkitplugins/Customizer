@@ -10,7 +10,7 @@ import iKguana.customizer.tools.CT;
 
 import java.io.File;
 
-public class CustomizerEvent extends CustomizerBase {
+public class CustomizerEvent extends CustomizerBase { //TODO 명령어 완성
     public CustomizerEvent() {
         setName("CustomizerEntity");
 

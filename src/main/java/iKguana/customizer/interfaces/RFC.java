@@ -3,7 +3,7 @@ package iKguana.customizer.interfaces;
 import java.util.ArrayList;
 
 import iKguana.artonline.SubClasses.UsefulFunctions;
-import iKguana.customizer.tools.Expression;
+import iKguana.customizer.tools.Calculator;
 
 public abstract class RFC extends UsefulFunctions {
     protected static String replaceAll(String str, String[] args) {
@@ -26,11 +26,11 @@ public abstract class RFC extends UsefulFunctions {
     }
 
     protected static boolean runStatements(String syntax) {
-        return Expression.getIt().calculate(syntax).equals("true");
+        return Calculator.getIt().calculate(syntax).equals("true");
     }
 
     protected static String calculate(String syntax) {
-        return Expression.getIt().calculate(syntax);
+        return Calculator.getIt().calculate(syntax);
     }
 
 }

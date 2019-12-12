@@ -35,7 +35,6 @@ import iKguana.customizer.CustomizerCommands;
 import iKguana.customizer.CustomizerExecutor;
 import iKguana.customizer.commands.DialogWindowCustom.E_Type;
 import iKguana.customizer.interfaces.CustomizerBase;
-import iKguana.customizer.interfaces.RFC;
 import iKguana.customizer.tools.CT;
 
 public class CustomizerDialog extends CustomizerBase {
